@@ -1,68 +1,6 @@
 import random
 import streamlit as st
-
-def get_range_for_difficulty(difficulty: str):
-    if difficulty == "Easy":
-        return 1, 20
-    if difficulty == "Normal":
-        return 1, 100
-    if difficulty == "Hard":
-        return 1, 50
-    return 1, 100
-
-
-def parse_guess(raw: str):
-    if raw is None:
-        return False, None, "Enter a guess."
-
-    if raw == "":
-        return False, None, "Enter a guess."
-
-    try:
-        if "." in raw:
-            value = int(float(raw))
-        else:
-            value = int(raw)
-    except Exception:
-        return False, None, "That is not a number."
-
-    return True, value, None
-
-
-def check_guess(guess, secret):
-    if guess == secret:
-        return "Win", "🎉 Correct!"
-
-    try:
-        if guess > secret:
-            return "Too High", "📈 Go HIGHER!"
-        else:
-            return "Too Low", "📉 Go LOWER!"
-    except TypeError:
-        g = str(guess)
-        if g == secret:
-            return "Win", "🎉 Correct!"
-        if g > secret:
-            return "Too High", "📈 Go HIGHER!"
-        return "Too Low", "📉 Go LOWER!"
-
-
-def update_score(current_score: int, outcome: str, attempt_number: int):
-    if outcome == "Win":
-        points = 100 - 10 * (attempt_number + 1)
-        if points < 10:
-            points = 10
-        return current_score + points
-
-    if outcome == "Too High":
-        if attempt_number % 2 == 0:
-            return current_score + 5
-        return current_score - 5
-
-    if outcome == "Too Low":
-        return current_score - 5
-
-    return current_score
+from logic_utils import get_range_for_difficulty, parse_guess, check_guess, update_score
 
 st.set_page_config(page_title="Glitchy Guesser", page_icon="🎮")
 
@@ -104,10 +42,25 @@ if "status" not in st.session_state:
 if "history" not in st.session_state:
     st.session_state.history = []
 
+# BUG 1 FIX (range persists on difficulty switch): The page loads with Normal (index=1) by
+# default, setting the secret in 1–100. Switching to Easy never regenerated the secret,
+# so out-of-range values persisted. AI (Claude) identified the missing difficulty-change
+# detection and suggested comparing session_state.difficulty to the current selection.
+# Also flagged that the hint text was hardcoded "1 and 100" — fixed below using {low}/{high}.
+# Collaborated with Claude Agent mode; we reviewed the diff and confirmed the reset logic.
+if st.session_state.get("difficulty") != difficulty:
+    st.session_state.difficulty = difficulty
+    st.session_state.secret = random.randint(low, high)
+    st.session_state.attempts = 1
+    st.session_state.score = 0
+    st.session_state.status = "playing"
+    st.session_state.history = []
+
 st.subheader("Make a guess")
 
+# FIXED: Was hardcoded "1 and 100" — now uses {low} and {high} from get_range_for_difficulty
 st.info(
-    f"Guess a number between 1 and 100. "
+    f"Guess a number between {low} and {high}. "
     f"Attempts left: {attempt_limit - st.session_state.attempts}"
 )
 
@@ -132,8 +85,17 @@ with col3:
     show_hint = st.checkbox("Show hint", value=True)
 
 if new_game:
+    # BUG 3 FIX: New Game only reset attempts + secret, leaving status/score/history unchanged.
+    # After a win/loss, status stayed "won"/"lost" so st.stop() fired on the very next rerun,
+    # making it impossible to play again without a full page refresh.
+    # AI (Claude) traced the st.stop() call and identified the 3 missing state resets.
+    # We verified by playing to a win, clicking New Game, and confirming the game restarted.
+    # Collaborated with Claude Agent mode; changes reviewed in the diff before accepting.
     st.session_state.attempts = 0
-    st.session_state.secret = random.randint(1, 100)
+    st.session_state.secret = random.randint(low, high)
+    st.session_state.status = "playing"
+    st.session_state.score = 0
+    st.session_state.history = []
     st.success("New game started.")
     st.rerun()
 
