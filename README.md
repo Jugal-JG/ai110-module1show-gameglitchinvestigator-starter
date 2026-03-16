@@ -30,7 +30,7 @@ A number guessing game where the player picks a difficulty, gets a secret number
 
 **Bugs Found:**
 
-| # | Bug | Where |
+| S.No. | Bug | Where |
 |---|---|---|
 | 1 | Wrong difficulty ranges — Hard returned 1–50 (easier than Normal's 1–100); hint text hardcoded "1 and 100"; New Game and difficulty switch both ignored difficulty range | `app.py` / `logic_utils.py` |
 | 2 | Hints completely backwards — "Too High" said "Go HIGHER!" and "Too Low" said "Go LOWER!" | `logic_utils.py` |
