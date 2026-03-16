@@ -62,4 +62,18 @@ Used Claude Code (Agent mode) to identify root causes, suggest fixes, and refact
 
 ## 🚀 Stretch Features
 
-- [ ] [If you choose to complete Challenge 4, insert a screenshot of your Enhanced Game UI here]
+### ✅ Challenge 4: Enhanced Game UI
+
+Three UI improvements were added to `app.py` without touching any core game logic:
+
+- **Color-coded hints** — Too High shows as a red `st.error`, Too Low shows as a yellow `st.warning` so the player can instantly tell direction by color alone
+- **Hot/Cold proximity emoji** — Each hint includes 🔥 Very Hot (≤5 away), 🌡️ Warm (≤15), 🧊 Cold (≤30), or ❄️ Freezing (>30) based on how close the guess is to the secret
+- **Guess History table** — A live summary table below each guess showing every attempt number, the guess value, result (Too High / Too Low / Correct), and distance from the secret
+
+**Color-coded hint + Hot/Cold emoji in action:**
+
+![Challenge 4 - Hints and Proximity](docs/Challenge_4.1.png)
+
+**Guess History table showing all attempts:**
+
+![Challenge 4 - Guess History Table](docs/Challenge_4.2.png)

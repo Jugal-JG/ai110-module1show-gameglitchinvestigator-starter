@@ -117,15 +117,31 @@ if submit:
     else:
         st.session_state.history.append(guess_int)
 
-        if st.session_state.attempts % 2 == 0:
-            secret = str(st.session_state.secret)
-        else:
-            secret = st.session_state.secret
+        # FIXED: On even attempts the secret was cast to str, causing string comparison.
+        # e.g. check_guess(12, "7") → "12" < "7" alphabetically → wrong "Too Low" result.
+        # Secret must always stay an int for correct numeric comparison.
+        secret = st.session_state.secret
 
         outcome, message = check_guess(guess_int, secret)
 
+        # CHALLENGE 4: Color-coded hints + Hot/Cold proximity emoji
         if show_hint:
-            st.warning(message)
+            distance = abs(guess_int - st.session_state.secret)
+            if distance == 0:
+                proximity = "🎯 Exact!"
+            elif distance <= 5:
+                proximity = "🔥 Very Hot!"
+            elif distance <= 15:
+                proximity = "🌡️ Warm"
+            elif distance <= 30:
+                proximity = "🧊 Cold"
+            else:
+                proximity = "❄️ Freezing!"
+
+            if outcome == "Too High":
+                st.error(f"{message}  |  {proximity}")
+            elif outcome == "Too Low":
+                st.warning(f"{message}  |  {proximity}")
 
         st.session_state.score = update_score(
             current_score=st.session_state.score,
@@ -148,6 +164,25 @@ if submit:
                     f"The secret was {st.session_state.secret}. "
                     f"Score: {st.session_state.score}"
                 )
+
+# CHALLENGE 4: Session summary table — shows all guesses with outcome per attempt
+if st.session_state.history:
+    st.divider()
+    st.subheader("📊 Guess History")
+    rows = []
+    for i, g in enumerate(st.session_state.history):
+        if isinstance(g, int):
+            distance = abs(g - st.session_state.secret)
+            if distance == 0:
+                result = "✅ Correct!"
+            elif g > st.session_state.secret:
+                result = "📉 Too High"
+            else:
+                result = "📈 Too Low"
+            rows.append({"Attempt": i + 1, "Guess": g, "Result": result, "Distance": distance})
+        else:
+            rows.append({"Attempt": i + 1, "Guess": str(g), "Result": "❌ Invalid", "Distance": "—"})
+    st.table(rows)
 
 st.divider()
 st.caption("Built by an AI that claims this code is production-ready.")
